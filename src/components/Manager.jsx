@@ -1,4 +1,7 @@
 import { useRef, useState, useEffect}  from 'react'
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { v4 as uuidv4 } from 'uuid';
 import BGcolor from '../ui/BGcolor'
 import Logo from '../ui/Logo'
 import Eye from '/eye.png'
@@ -10,14 +13,17 @@ const Manager = () => {
     const [form,setForm] = useState({URL:"",username:"",password:""})
     const [passwordArray, setPasswordArray] = useState([])
 
+    const passwordRef = useRef()
     const ref = useRef()
 
     const handleShowPassword = () =>{
         if(ref.current.src.includes(Eye)){
-            alert("Password will be visible")
             ref.current.src=Hidden
+            passwordRef.current.type="password"
         }else{
+            alert("Password will be visible")
             ref.current.src=Eye
+            passwordRef.current.type="text"
         }
     }
 
@@ -34,15 +40,49 @@ const Manager = () => {
     }
 
     const savePassword = () => {
-        console.log(form)
+        if(form.URL.length>3 && form.username.length>3 && form.password.length>3 ){
         // setpasswordArraytakes time to update the state 
-        localStorage.setItem("passwords", JSON.stringify([...passwordArray,form]))
-        setPasswordArray([...passwordArray,form])
+        localStorage.setItem("passwords", JSON.stringify([...passwordArray,{...form,id:uuidv4()}]))
+        setPasswordArray([...passwordArray,{...form,id:uuidv4()}])
+        setForm({URL:"",username:"",password:""})
+        }else{
+            toast('Error: Password not saved')
+        }
+    }
+
+    const deletePassword = (id) => {
+        const conf =  confirm("Delete password??")
+        if(conf){
+            localStorage.setItem("passwords",JSON.stringify(
+                passwordArray.filter(items => items.id!=id)
+            ))
+            setPasswordArray(passwordArray.filter(items => items.id!=id))
+        }
+    }
+
+    const editPassword = (id) => {
+        setForm(passwordArray.filter(items => items.id ===id)[0])
+        setPasswordArray(passwordArray.filter(items => items.id!=id))
     }
 
     return(
         <>
         <BGcolor/>
+        <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        />
+        {/* Same as */}
+        <ToastContainer />
+
         <div className="flex flex-col justify-center items-center py-4">
 
             <div className="text-2xl"><Logo/></div>
@@ -55,7 +95,7 @@ const Manager = () => {
                 {/* URL  */}
                 <input  type="text" name="URL" id="URL" placeholder="Enter URL" onChange={handlechange} value={form.URL} className="w-full border-2 border-green-100 rounded-2xl px-2 py-1 outline-none focus:border-green-300"/>
 
-                <div className="w-full flex gap-3">
+                <div className="w-full flex flex-col md:flex-row gap-3">
 
                     {/* Username  */}
                     <input  type="text" name="username" placeholder="Enter username" id="username" onChange={handlechange} value={form.username} className="w-full border-2 border-green-100 rounded-2xl px-2 py-1 outline-none focus:border-green-300"/>
@@ -63,10 +103,10 @@ const Manager = () => {
                     {/* Password  */}
                     <div className="relative flex  items-center">
         
-                        <input  type="password" name="password" placeholder="Enter password" id="password" onChange={handlechange} value={form.password} className="w-full   border-2 border-green-100 rounded-2xl px-2 py-1 outline-none focus:border-green-300"/>
+                        <input ref={passwordRef} type="password" name="password" placeholder="Enter password" id="password" onChange={handlechange} value={form.password} className="w-full   border-2 border-green-100 rounded-2xl px-2 py-1 outline-none focus:border-green-300"/>
 
                         <span className="absolute items-center right-2 bg-white px-2 cursor-pointer" onClick={handleShowPassword}>
-                            <img ref={ref} src={Eye} alt="show" className="h-4" />
+                            <img ref={ref} src={Hidden} alt="show" className="h-4" />
                         </span>
                     </div>
 
@@ -87,8 +127,8 @@ const Manager = () => {
                 </div>
             </div>
 
-            <div className='container'>
-            <Table passwordArray={passwordArray}/>
+            <div className='container px-2'>
+            <Table passwordArray={passwordArray} toast={toast} deletePassword={deletePassword} editPassword={editPassword}/>
             </div>
         </div>
         </>
